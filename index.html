@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bar Review Visual Case Digest Viewer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { display: flex; flex-direction: column; height: 100vh; background: #0f172a; color: #f8fafc; }
+    header { padding: 12px 24px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+    header h1 { font-size: 1.15rem; color: #fde047; }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    select, label.upload-btn { padding: 8px 12px; border-radius: 6px; background: #334155; color: #fff; border: 1px solid #475569; cursor: pointer; font-size: 0.88rem; }
+    label.upload-btn:hover { background: #475569; }
+    input[type="file"] { display: none; }
+    .split-container { display: flex; flex: 1; overflow: hidden; }
+    .pane { flex: 1; overflow-y: auto; padding: 24px; }
+    .left-pane { border-right: 1px solid #334155; display: flex; justify-content: center; align-items: flex-start; background: #090d16; }
+    .left-pane img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .right-pane { background: #1e293b; line-height: 1.65; }
+    .digest-card { max-width: 720px; margin: 0 auto; background: #0f172a; padding: 28px; border-radius: 8px; border: 1px solid #334155; }
+    .digest-card h2 { color: #fde047; margin-bottom: 4px; }
+    .citation { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #334155; }
+    .section-title { color: #38bdf8; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 18px; margin-bottom: 6px; }
+    @media (max-width: 800px) { .split-container { flex-direction: column; } .left-pane { border-right: none; border-bottom: 1px solid #334155; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>⚖️ Visual Case Digest Reviewer</h1>
+    <div class="controls">
+      <select id="caseSelector" onchange="loadPresetCase()">
+        <option value="ropwu">ROPWU v. Coca-Cola (G.R. No. 198783)</option>
+        <option value="teologo">Teologo & Delos Santos v. People (G.R. No. 238383)</option>
+        <option value="banez">Bañez v. Bañez (G.R. No. 132518)</option>
+        <option value="ong">Ong v. Ong (G.R. No. 153206)</option>
+        <option value="wassmer">Wassmer v. Velez (G.R. No. L-20089)</option>
+      </select>
+      <label class="upload-btn">
+        🖼️ Upload Custom Image
+        <input type="file" accept="image/*" onchange="uploadImage(event)">
+      </label>
+      <label class="upload-btn">
+        📄 Upload Digest (.txt/.md)
+        <input type="file" accept=".txt,.md" onchange="uploadDigest(event)">
+      </label>
+    </div>
+  </header>
+
+  <div class="split-container">
+    <!-- Left Pane: Visual Infographic -->
+    <div class="pane left-pane">
+      <img id="visualImage" src="images/ropwu.jpg" alt="Visual Case Digest">
+    </div>
+
+    <!-- Right Pane: Full Text Case Digest -->
+    <div class="pane right-pane">
+      <div class="digest-card" id="digestContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const cases = {
+      ropwu: {
+        img: "images/ropwu.jpg",
+        title: "Royal Plant Workers Union (ROPWU) v. Coca-Cola Bottlers Philippines, Inc.",
+        citation: "G.R. No. 198783 • April 15, 2013 • First Division • Villarama, Jr., J.",
+        facts: "Coca-Cola Bottlers Philippines, Inc. (Cebu Plant) removed the chairs of bottling operators on the production floor pursuant to its 5S housekeeping and efficiency program. ROPWU objected, claiming the operators had used chairs for over 20 years and removing them violated labor standards and the non-diminution of benefits under Article 100 of the Labor Code.",
+        issue: "Was the removal of the bottling operators' chairs a valid exercise of management prerogative, or a violation of the principle against diminution of benefits?",
+        held: "YES, it was a valid exercise of management prerogative. Management is free to regulate all aspects of employment, including work methods and workplace safety, provided it is done in good faith. Chairs on the production line are a working condition/convenience, not a monetary perk or vested 'benefit' covered by Article 100."
+      },
+      teologo: {
+        img: "images/teologo.jpg",
+        title: "Janice L. Teologo and Jennifer Delos Santos v. People of the Philippines",
+        citation: "G.R. No. 238383 • April 02, 2025 • Second Division • Kho, Jr., J.",
+        facts: "From June to October 2009, petitioners served as store managers at a Shakey's branch in Angono, Rizal. They were charged with withholding and misappropriating the employees' share of collected service charges. In their defense, they claimed the funds were kept as informal 'forced savings' or 'safety funds' for the employees.",
+        issue: "Are the store managers guilty of Qualified Theft for withholding and diverting their employees' service charges?",
+        held: "YES, guilty of Qualified Theft. All elements of Qualified Theft under Article 310 of the Revised Penal Code were established: taking of personal property (service charges) without consent, intent to gain, and grave abuse of the high degree of trust and confidence reposed in them as store managers."
+      },
+      banez: {
+        img: "images/banez.jpg",
+        title: "Aida P. Bañez v. Gabriel B. Bañez",
+        citation: "G.R. No. 132518 • January 23, 2002 • Second Division (374 SCRA 340) • Quisumbing, J.",
+        facts: "Aida Bañez filed a petition for legal separation against Gabriel Bañez on grounds of repeated physical violence, grossly abusive conduct, and abandonment, along with a prayer for alimony pendente lite. The RTC granted the decree and ordered support. While Gabriel's appeal was pending, Aida moved for execution pending appeal.",
+        issue: "May provisional and companion orders (such as support and custody) in a legal separation case be executed immediately while the main appeal is pending?",
+        held: "YES. While an appeal generally stays the finality of the main decree, provisions for support, custody, and protection of the abused/abandoned spouse and children are immediately executory or enforceable upon good reasons to prevent urgent deprivation during appeal."
+      },
+      ong: {
+        img: "images/ong.jpg",
+        title: "William Ong (Ong Eng Kiam) v. Lucita G. Ong",
+        citation: "G.R. No. 153206 • October 23, 2006 • First Division (505 SCRA 76) • Austria-Martinez, J.",
+        facts: "After 20 years of marriage, Lucita Ong filed a petition for legal separation under Article 55(1) of the Family Code, detailing repeated physical violence, threats with a firearm, and grossly abusive conduct by her husband, William Ong, which forced her to flee the conjugal home.",
+        issue: "Is Lucita Ong entitled to a decree of legal separation based on repeated physical violence and grossly abusive conduct?",
+        held: "YES. The petition for legal separation is granted. The evidence established a continuous pattern of physical harm, severe threats, and grossly abusive conduct—not mere 'ordinary marital friction'—making continued cohabitation unsafe and intolerable under Article 55."
+      },
+      wassmer: {
+        img: "images/wassmer.jpg",
+        title: "Beatriz P. Wassmer v. Francisco X. Velez",
+        citation: "G.R. No. L-20089 • December 26, 1964 • En Banc • Bengzon, J.P.",
+        facts: "Beatriz Wassmer and Francisco Velez set their wedding for September 4, 1954. After securing a marriage license, printing and distributing invitations, buying wedding attire and a matrimonial bed, and holding bridal showers, Velez left two days before the wedding and never returned.",
+        issue: "May Velez be held liable for damages for walking out on the wedding despite the rule that mere breach of promise to marry is not an actionable wrong?",
+        held: "YES, Article 21 of the Civil Code applies. While mere breach of promise to marry is not actionable, formally arranging a wedding with extensive publicity and expenses only to desert the bride at the altar is palpably contrary to good customs, warranting moral and exemplary damages."
+      }
+    };
+
+    function loadPresetCase() {
+      const key = document.getElementById('caseSelector').value;
+      const data = cases[key];
+      document.getElementById('visualImage').src = data.img;
+      document.getElementById('digestContent').innerHTML = `
+        <h2>${data.title}</h2>
+        <div class="citation">${data.citation}</div>
+        <div class="section-title">Facts</div>
+        <p>${data.facts}</p>
+        <div class="section-title">Issue</div>
+        <p>${data.issue}</p>
+        <div class="section-title">Held & Doctrine</div>
+        <p>${data.held}</p>
+      `;
+    }
+
+    function uploadImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('visualImage').src = URL.createObjectURL(file);
+      }
+    }
+
+    function uploadDigest(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const text = e.target.result.replace(/\n/g, '<br>');
+          document.getElementById('digestContent').innerHTML = `
+            <h2>${file.name}</h2>
+            <div class="citation">Uploaded Custom Case Digest</div>
+            <p>${text}</p>
+          `;
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    // Load the first case on startup
+    loadPresetCase();
+  </script>
+</body>
+</html>
