@@ -10,9 +10,10 @@
     body { display: flex; flex-direction: column; height: 100vh; background: #0f172a; color: #f8fafc; }
     header { padding: 12px 24px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
     header h1 { font-size: 1.15rem; color: #fde047; }
-    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    select, label.upload-btn { padding: 8px 12px; border-radius: 6px; background: #334155; color: #fff; border: 1px solid #475569; cursor: pointer; font-size: 0.88rem; }
-    label.upload-btn:hover { background: #475569; }
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    select, button.nav-btn, label.upload-btn { padding: 8px 12px; border-radius: 6px; background: #334155; color: #fff; border: 1px solid #475569; cursor: pointer; font-size: 0.88rem; }
+    button.nav-btn:hover, label.upload-btn:hover { background: #475569; }
+    button.nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     input[type="file"] { display: none; }
     .split-container { display: flex; flex: 1; overflow: hidden; }
     .pane { flex: 1; overflow-y: auto; padding: 24px; }
@@ -30,15 +31,22 @@
   <header>
     <h1>⚖️ Labor Law Case Digests</h1>
     <div class="controls">
+      <!-- Previous Case Arrow Button -->
+      <button class="nav-btn" id="prevBtn" onclick="changeCase(-1)" title="Previous Case">◀ Prev</button>
+      
       <select id="caseSelector" onchange="displaySelectedCase()">
         <option value="">Loading cases...</option>
       </select>
+
+      <!-- Next Case Arrow Button -->
+      <button class="nav-btn" id="nextBtn" onclick="changeCase(1)" title="Next Case">Next ▶</button>
+
       <label class="upload-btn">
-        🖼️ Upload Custom Image
+        🖼️ Upload Image
         <input type="file" accept="image/*" onchange="uploadImage(event)">
       </label>
       <label class="upload-btn">
-        📄 Upload Digest (.txt/.md)
+        📄 Upload Digest
         <input type="file" accept=".txt,.md" onchange="uploadDigest(event)">
       </label>
     </div>
@@ -97,8 +105,13 @@
     }
 
     async function displaySelectedCase() {
-      const idx = document.getElementById('caseSelector').value;
-      if (idx === "" || !caseList[idx]) return;
+      const selector = document.getElementById('caseSelector');
+      const idx = parseInt(selector.value);
+      if (isNaN(idx) || !caseList[idx]) return;
+
+      // Update arrow buttons disabled state at boundaries
+      document.getElementById('prevBtn').disabled = (idx === 0);
+      document.getElementById('nextBtn').disabled = (idx === caseList.length - 1);
 
       const item = caseList[idx];
       document.getElementById('visualImage').src = item.imgPath;
@@ -121,6 +134,16 @@
             <b>${item.title}.txt</b> into your <b>digests/</b> folder on GitHub.
           </p>
         `;
+      }
+    }
+
+    // Function to handle clicking the Prev / Next arrow buttons
+    function changeCase(direction) {
+      const selector = document.getElementById('caseSelector');
+      let newIdx = parseInt(selector.value) + direction;
+      if (newIdx >= 0 && newIdx < caseList.length) {
+        selector.value = newIdx;
+        displaySelectedCase();
       }
     }
 
