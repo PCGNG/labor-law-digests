@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Labor Law Case Digests BY PCGNG</title>
+  <title>Labor Law Case Digests</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { display: flex; flex-direction: column; height: 100vh; background: #0f172a; color: #f8fafc; }
@@ -17,25 +18,20 @@
     .pane { flex: 1; overflow-y: auto; padding: 24px; }
     .left-pane { border-right: 1px solid #334155; display: flex; justify-content: center; align-items: flex-start; background: #090d16; }
     .left-pane img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .right-pane { background: #1e293b; line-height: 1.65; }
-    .digest-card { max-width: 720px; margin: 0 auto; background: #0f172a; padding: 28px; border-radius: 8px; border: 1px solid #334155; }
-    .digest-card h2 { color: #fde047; margin-bottom: 4px; }
-    .citation { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #334155; }
-    .section-title { color: #38bdf8; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 18px; margin-bottom: 6px; }
+    .right-pane { background: #1e293b; line-height: 1.7; }
+    .digest-card { max-width: 760px; margin: 0 auto; background: #0f172a; padding: 28px; border-radius: 8px; border: 1px solid #334155; white-space: pre-wrap; font-size: 0.95rem; }
+    .digest-card h1, .digest-card h2, .digest-card h3 { color: #fde047; margin-bottom: 8px; margin-top: 14px; }
+    .digest-card strong { color: #38bdf8; }
     @media (max-width: 800px) { .split-container { flex-direction: column; } .left-pane { border-right: none; border-bottom: 1px solid #334155; } }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>⚖️ Labor Law Case Digests BY PCGNG</h1>
+    <h1>⚖️ Labor Law Case Digests</h1>
     <div class="controls">
-      <select id="caseSelector" onchange="loadPresetCase()">
-        <option value="ropwu">ROPWU v. Coca-Cola (G.R. No. 198783)</option>
-        <option value="teologo">Teologo & Delos Santos v. People (G.R. No. 238383)</option>
-        <option value="banez">Bañez v. Bañez (G.R. No. 132518)</option>
-        <option value="ong">Ong v. Ong (G.R. No. 153206)</option>
-        <option value="wassmer">Wassmer v. Velez (G.R. No. L-20089)</option>
+      <select id="caseSelector" onchange="displaySelectedCase()">
+        <option value="">Loading cases...</option>
       </select>
       <label class="upload-btn">
         🖼️ Upload Custom Image
@@ -49,78 +45,102 @@
   </header>
 
   <div class="split-container">
-    <!-- Left Pane: Visual Infographic -->
     <div class="pane left-pane">
-      <img id="visualImage" src="images/ropwu.jpg" alt="Visual Case Digest">
+      <img id="visualImage" src="" alt="Visual Case Digest">
     </div>
-
-    <!-- Right Pane: Full Text Case Digest -->
     <div class="pane right-pane">
-      <div class="digest-card" id="digestContent"></div>
+      <div class="digest-card" id="digestContent">Select a case to view its digest.</div>
     </div>
   </div>
 
   <script>
-    const cases = {
-    ropwu: {
-      img: "images/Royal Plant Workers Union (ROPWU) v. Coca-Cola Bottlers Philippines, Inc..jpg",
-      title: "Royal Plant Workers Union (ROPWU) v. Coca-Cola Bottlers Philippines, Inc.",
-      citation: "G.R. No. 198783 • April 15, 2013 • First Division • Villarama, Jr., J.",
-      facts: "Coca-Cola Bottlers Philippines, Inc. (Cebu Plant) removed the chairs of bottling operators on the production floor pursuant to its 5S housekeeping and efficiency program. ROPWU objected, claiming the operators had used chairs for over 20 years and removing them violated labor standards and the non-diminution of benefits under Article 100 of the Labor Code.",
-      issue: "Was the removal of the bottling operators' chairs a valid exercise of management prerogative, or a violation of the principle against diminution of benefits?",
-      held: "YES, it was a valid exercise of management prerogative. Management is free to regulate all aspects of employment, including work methods and workplace safety, provided it is done in good faith. Chairs on the production line are a working condition/convenience, not a monetary perk or vested 'benefit' covered by Article 100."
-    },
-    teologo: {
-      img: "images/Janice L. Teologo and Jennifer Delos Santos v. People of the Philippines.jpg",
-      title: "Janice L. Teologo and Jennifer Delos Santos v. People of the Philippines",
-      citation: "G.R. No. 238383 • April 02, 2025 • Second Division • Kho, Jr., J.",
-      facts: "From June to October 2009, petitioners served as store managers at a Shakey's branch in Angono, Rizal. They were charged with withholding and misappropriating the employees' share of collected service charges. In their defense, they claimed the funds were kept as informal 'forced savings' or 'safety funds' for the employees.",
-      issue: "Are the store managers guilty of Qualified Theft for withholding and diverting their employees' service charges?",
-      held: "YES, guilty of Qualified Theft. All elements of Qualified Theft under Article 310 of the Revised Penal Code were established: taking of personal property (service charges) without consent, intent to gain, and grave abuse of the high degree of trust and confidence reposed in them as store managers."
-    },
-    };
+    const USER = "PCGNG";
+    const REPO = "labor-law-digests";
+    let caseList = [];
 
-    function loadPresetCase() {
-      const key = document.getElementById('caseSelector').value;
-      const data = cases[key];
-      document.getElementById('visualImage').src = data.img;
-      document.getElementById('digestContent').innerHTML = `
-        <h2>${data.title}</h2>
-        <div class="citation">${data.citation}</div>
-        <div class="section-title">Facts</div>
-        <p>${data.facts}</p>
-        <div class="section-title">Issue</div>
-        <p>${data.issue}</p>
-        <div class="section-title">Held & Doctrine</div>
-        <p>${data.held}</p>
-      `;
+    async function loadCases() {
+      const selector = document.getElementById('caseSelector');
+      try {
+        const response = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/images`);
+        if (!response.ok) throw new Error("Could not access images directory");
+        const files = await response.json();
+
+        const imageFiles = files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f.name));
+
+        if (imageFiles.length === 0) {
+          selector.innerHTML = '<option>No images found</option>';
+          return;
+        }
+
+        selector.innerHTML = '';
+        caseList = imageFiles.map(img => {
+          const rawName = img.name.replace(/\.[^/.]+$/, "");
+          return {
+            title: rawName,
+            imgPath: img.path,
+            digestPath: `digests/${rawName}.txt`
+          };
+        });
+
+        caseList.forEach((item, index) => {
+          const opt = document.createElement('option');
+          opt.value = index;
+          opt.textContent = item.title;
+          selector.appendChild(opt);
+        });
+
+        displaySelectedCase();
+      } catch (e) {
+        selector.innerHTML = '<option>Failed to load cases</option>';
+        console.error(e);
+      }
+    }
+
+    async function displaySelectedCase() {
+      const idx = document.getElementById('caseSelector').value;
+      if (idx === "" || !caseList[idx]) return;
+
+      const item = caseList[idx];
+      document.getElementById('visualImage').src = item.imgPath;
+
+      const contentBox = document.getElementById('digestContent');
+      contentBox.innerHTML = `<h2>${item.title}</h2><p style="color:#94a3b8;">Loading case digest file...</p>`;
+
+      try {
+        const res = await fetch(item.digestPath);
+        if (!res.ok) throw new Error("File not found");
+        const text = await res.text();
+        contentBox.innerHTML = `<h2>${item.title}</h2><hr style="margin:12px 0; border-color:#334155;">` + marked.parse(text);
+      } catch (err) {
+        contentBox.innerHTML = `
+          <h2>${item.title}</h2>
+          <hr style="margin:12px 0; border-color:#334155;">
+          <p style="color:#f87171;">Digest file not found at <code>${item.digestPath}</code></p>
+          <p style="color:#94a3b8; font-size:0.9rem; margin-top:8px;">
+            To display your written digest here, upload a text file named:<br>
+            <b>${item.title}.txt</b> into your <b>digests/</b> folder on GitHub.
+          </p>
+        `;
+      }
     }
 
     function uploadImage(event) {
       const file = event.target.files[0];
-      if (file) {
-        document.getElementById('visualImage').src = URL.createObjectURL(file);
-      }
+      if (file) document.getElementById('visualImage').src = URL.createObjectURL(file);
     }
 
     function uploadDigest(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-          const text = e.target.result.replace(/\n/g, '<br>');
-          document.getElementById('digestContent').innerHTML = `
-            <h2>${file.name}</h2>
-            <div class="citation">Uploaded Custom Case Digest</div>
-            <p>${text}</p>
-          `;
+        reader.onload = e => {
+          document.getElementById('digestContent').innerHTML = `<h2>${file.name}</h2><hr style="margin:12px 0; border-color:#334155;">` + marked.parse(e.target.result);
         };
         reader.readAsText(file);
       }
     }
 
-    // Load the first case on startup
-    loadPresetCase();
+    loadCases();
   </script>
 </body>
 </html>
